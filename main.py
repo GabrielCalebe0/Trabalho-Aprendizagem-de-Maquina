@@ -34,24 +34,24 @@ def analises_especificas(dados):
     print(f"\nQuantidade total de dados carregados: {total_dados}")
 
     # Contagem de homens e mulheres (assumindo que a coluna 'gender' exista)
-    if 'gender' in dados.columns:
-        genero_contagem = dados['gender'].value_counts()
+    if 'Gender' in dados.columns:
+        genero_contagem = dados['Gender'].value_counts()
         print(f"\nQuantidade de homens e mulheres:\n{genero_contagem}")
     else:
-        print("\nA coluna 'gender' não está presente nos dados.")
+        print("\nA coluna 'Gender' não está presente nos dados.")
 
     # Quantidade de registros sem dados sobre a educação dos pais (assumindo a coluna 'parental_level_of_education')
-    if 'parental_level_of_education' in dados.columns:
-        registros_sem_educacao_pais = dados['parental_level_of_education'].isna().sum()
+    if 'Parental_Education_Level' in dados.columns:
+        registros_sem_educacao_pais = dados['Parental_Education_Level'].isna().sum()
         print(f"\nQuantidade de registros sem dados sobre a educação dos pais: {registros_sem_educacao_pais}")
     else:
-        print("\nA coluna 'parental_level_of_education' não está presente nos dados.")
+        print("\nA coluna 'Parental_Education_Level' não está presente nos dados.")
 
 def visualizacao(dados):
     """Gera gráficos de visualização com base nos dados."""
     # Gráfico de gênero
-    if 'gender' in dados.columns:
-        genero_contagem = dados['gender'].value_counts()
+    if 'Gender' in dados.columns:
+        genero_contagem = dados['Gender'].value_counts()
         genero_contagem.plot(kind='bar', title="Distribuição por Gênero", color=['blue', 'pink'])
         plt.xlabel('Gênero')
         plt.ylabel('Contagem')
@@ -59,8 +59,8 @@ def visualizacao(dados):
         plt.show()
 
     # Gráfico de educação dos pais
-    if 'parental_level_of_education' in dados.columns:
-        educacao_pais_contagem = dados['parental_level_of_education'].value_counts()
+    if 'Parental_Education_Level' in dados.columns:
+        educacao_pais_contagem = dados['Parental_Education_Level'].value_counts()
         educacao_pais_contagem.plot(kind='bar', title="Distribuição por Nível de Educação dos Pais", color='green')
         plt.xlabel('Nível de Educação dos Pais')
         plt.ylabel('Contagem')
