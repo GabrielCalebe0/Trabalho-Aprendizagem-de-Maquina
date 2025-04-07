@@ -1,86 +1,119 @@
 import pandas as pd
-import matplotlib.pyplot as plt 
+import matplotlib.pyplot as plt
+import numpy as np
 import os
 
-def carregar_dados():
-    # Opcão de escolha que arquivo CSV ou JSON para carregar os dados e exemplo do nome de arquivo que consta em nosso sistema.
-    arquivo = input("Digite o caminho do arquivo CSV ou JSON (exemplo: Students-grading-dataset.csv ou Students-grading-dataset.json): ")
+# Função para carregar o arquivo
+def carregar_arquivo():
+    caminho = input("Digite o caminho do arquivo .csv ou .json: ")
 
-    # Verifica se o arquivo existe e caso esteja incorreto avisar que não foi encontrado.
-    if not os.path.isfile(arquivo):
-        print(f"Erro: O arquivo {arquivo} não foi encontrado.")
+    # Verificando se o arquivo existe e retornando os dados
+    try:
+        if caminho.endswith('.csv'):
+            return pd.read_csv('Students_Grading_Dataset.csv')
+        elif caminho.endswith('.json'):
+            return pd.read_json('Students_Grading_Dataset.json')
+        else:
+            print("Formato de arquivo inválido! Só aceitamos CSV ou JSON.")
+            return None
+    except Exception as e:
+        print(f"Erro ao ler o arquivo: {e}")
         return None
 
-    # Carrega o arquivo CSV ou JSON
-    if arquivo.endswith("Students_Grading_Dataset.csv"):
-        dados = pd.read_csv(arquivo)
-    elif arquivo.endswith("Students_Grading_Dataset.json"):
-        dados = pd.read_json(arquivo)
+def exibir_resumo_estatistico(df):
+    print("\nResumo estatístico:")
+    print(df.describe())
+
+    # Quantidade de dados carregados
+    print(f"\nQuantidade de dados carregados: {df.shape[0]}")
+
+    # Quantidade de homens e mulheres
+    if 'Gender' in df.columns:
+        print(f"\nQuantidade de homens e mulheres:")
+        print(df['Gender'].value_counts())
     else:
-        print("Erro: O arquivo deve ser CSV ou JSON.")
-        return None
-    
-    return dados
+        print("\nColuna 'Gender' não encontrada no dataset.")
 
-def resumo_estatistico(dados):
-    """Exibe um resumo estatístico dos dados."""
-    print("\nResumo Estatístico dos Dados:")
-    print(dados.describe())
-
-def analises_especificas(dados):
-    """Realiza as análises específicas solicitadas."""
-    # Quantidade total de dados carregados
-    total_dados = len(dados)
-    print(f"\nQuantidade total de dados carregados: {total_dados}")
-
-    # Contagem de homens e mulheres (assumindo que a coluna 'gender' exista)
-    if 'gender' in dados.columns:
-        genero_contagem = dados['gender'].value_counts()
-        print(f"\nQuantidade de homens e mulheres:\n{genero_contagem}")
-    else:
-        print("\nA coluna 'gender' não está presente nos dados.")
-
-    # Quantidade de registros sem dados sobre a educação dos pais (assumindo a coluna 'parental_level_of_education')
-    if 'parental_level_of_education' in dados.columns:
-        registros_sem_educacao_pais = dados['parental_level_of_education'].isna().sum()
+    # Registros sem dados sobre a educação dos pais
+    if 'Parent_Education_Level' in df.columns:
+        registros_sem_educacao_pais = df['Parent_Education_Level'].isna().sum()
         print(f"\nQuantidade de registros sem dados sobre a educação dos pais: {registros_sem_educacao_pais}")
     else:
-        print("\nA coluna 'parental_level_of_education' não está presente nos dados.")
+        print("\nColuna 'Parent_Education_Level' não encontrada no dataset.")
 
-def visualizacao(dados):
-    """Gera gráficos de visualização com base nos dados."""
-    # Gráfico de gênero
-    if 'gender' in dados.columns:
-        genero_contagem = dados['gender'].value_counts()
-        genero_contagem.plot(kind='bar', title="Distribuição por Gênero", color=['blue', 'pink'])
-        plt.xlabel('Gênero')
-        plt.ylabel('Contagem')
-        plt.xticks(rotation=0)
+# Função para limpar os dados
+def limpar_dados(df):
+    # Remover registros com a educação dos pais vazia
+    if 'Parent_Education_Level' in df.columns:
+        df_cleaned = df.dropna(subset=['Parent_Education_Level'])
+    else:
+        df_cleaned = df
+
+    # Preencher os valores nulos de Attendance com a mediana
+    if 'Attendance (%)' in df_cleaned.columns:
+        attendance_median = df_cleaned['Attendance (%)'].median()
+        df_cleaned['Attendance (%)'].fillna(attendance_median, inplace=True)
+    
+    # Exibir o somatório de Attendance
+    if 'Attendance (%)' in df_cleaned.columns:
+        print(f"\nSomatório de Attendance: {df_cleaned['Attendance (%)'].sum()}")
+    
+    return df_cleaned
+
+# Função para consultar dados
+def consultar_dados(df):
+    coluna = input("\nDigite o nome da coluna para consulta (ex: Midterm_Score, Final_Score, etc.): ")
+    if coluna in df.columns:
+        print(f"\nConsultando dados da coluna {coluna}:")
+        print(f"Média: {df[coluna].mean()}")
+        print(f"Mediana: {df[coluna].median()}")
+        print(f"Moda: {df[coluna].mode()[0]}")
+        print(f"Desvio padrão: {df[coluna].std()}")
+    else:
+        print(f"\nColuna {coluna} não encontrada no dataset.")
+
+# Função para gerar gráficos
+def gerar_graficos(df):
+    # Gráfico de dispersão: "horas de sono" vs "nota final"
+    if 'Sleep_Hours_per_Night' in df.columns and 'Final_Score' in df.columns:
+        plt.figure(figsize=(10, 6))
+        plt.scatter(df['Sleep_Hours_per_Night'], df['Final_Score'])
+        plt.title('Horas de Sono vs Nota Final')
+        plt.xlabel('Horas de Sono')
+        plt.ylabel('Nota Final')
         plt.show()
+    else:
+        print("\nColunas 'Sleep_Hours_per_Night' ou 'Final_Score' não encontradas no dataset.")
+    
+    # Gráfico de barras: idade x média das notas intermediárias (Midterm_Score)
+    if 'Age' in df.columns and 'Midterm_Score' in df.columns:
+        df['Age_group'] = pd.cut(df['Age'], bins=[0, 17, 21, 24, np.inf], labels=['Até 17', '18 a 21', '21 a 24', '25 ou mais'])
+        age_group_avg = df.groupby('Age_group')['Midterm_Score'].mean()
 
-    # Gráfico de educação dos pais
-    if 'parental_level_of_education' in dados.columns:
-        educacao_pais_contagem = dados['parental_level_of_education'].value_counts()
-        educacao_pais_contagem.plot(kind='bar', title="Distribuição por Nível de Educação dos Pais", color='green')
-        plt.xlabel('Nível de Educação dos Pais')
-        plt.ylabel('Contagem')
-        plt.xticks(rotation=45)
+        age_group_avg.plot(kind='bar', figsize=(10, 6), title='Idade x Média das Notas de Midterm')
+        plt.xlabel('Faixa Etária')
+        plt.ylabel('Média das Notas de Midterm')
         plt.show()
+    else:
+        print("\nColunas 'Age' ou 'Midterm_Score' não encontradas no dataset.")
+    
+    # Gráfico de pizza: distribuição de idades
+    if 'Age_group' in df.columns:
+        age_group_counts = df['Age_group'].value_counts()
+        age_group_counts.plot(kind='pie', autopct='%1.1f%%', figsize=(8, 8), title='Distribuição das Idades')
+        plt.ylabel('')
+        plt.show()
+    else:
+        print("\nColuna 'Age_group' não encontrada no dataset.")
 
+# Função principal
 def main():
-    """Função principal para executar o analisador de dados."""
-    # Carregar os dados
-    dados = carregar_dados()
-
-    if dados is not None:
-        # Exibir resumo estatístico
-        resumo_estatistico(dados)
-
-        # Realizar análises específicas
-        analises_especificas(dados)
-
-        # Visualização dos dados
-        visualizacao(dados)
-
+    df = carregar_arquivo()
+    if df is not None:
+        exibir_resumo_estatistico(df)
+        df_cleaned = limpar_dados(df)
+        consultar_dados(df_cleaned)
+        gerar_graficos(df_cleaned)
+        
 if __name__ == "__main__":
     main()
