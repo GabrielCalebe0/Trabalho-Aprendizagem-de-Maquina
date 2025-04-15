@@ -3,11 +3,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 
-# Função para carregar o arquivo
+# Função que ira carregar os dados
 def carregar_arquivo():
     caminho = input("Digite o caminho do arquivo .csv ou .json: ")
 
-    # Verificando se o arquivo existe e retornando os dados
+    # Opções de arquivos disponiveis para leitura
     try:
         if caminho.endswith('.csv'):
             return pd.read_csv('Students_Grading_Dataset.csv')
@@ -21,58 +21,97 @@ def carregar_arquivo():
         return None
 
 def exibir_resumo_estatistico(df):
-    print("\nResumo estatístico:")
-    print(df.describe())
+    print(f'\n--- Resumo Estatístico dos Dados ---\n')
 
-    # Quantidade de dados carregados
-    print(f"\nQuantidade de dados carregados: {df.shape[0]}")
+    # Quantidade dos registros
+    total_registros = len(df)
+    print(f"Quantidade total de registros: {total_registros}")
+    (f'Resumo: {total_registros} registros carregados.')
 
-    # Quantidade de homens e mulheres
-    if 'Gender' in df.columns:
-        print(f"\nQuantidade de homens e mulheres:")
-        print(df['Gender'].value_counts())
+    # 2. Quantidade de homens e mulheres
+    if "Gender" in df.columns:
+        quantidade_homens = (df['Gender'] == 'Male').sum()
+        quantidade_mulheres = (df['Gender'] == 'Female').sum()
+
+        print(f"Quantidade de homens: {quantidade_homens}")
+        print(f"Quantidade de mulheres: {quantidade_mulheres}")
+        (f'Resumo: {quantidade_homens} homens e {quantidade_mulheres} mulheres.')
     else:
-        print("\nColuna 'Gender' não encontrada no dataset.")
+        print("Coluna 'Gender' não encontrada no dataset.")
 
-    # Registros sem dados sobre a educação dos pais
-    if 'Parent_Education_Level' in df.columns:
+    # 3. Quantidade de dados sobre a educação dos pais
+    if "Parent_Education_Level" in df.columns:
         registros_sem_educacao_pais = df['Parent_Education_Level'].isna().sum()
-        print(f"\nQuantidade de registros sem dados sobre a educação dos pais: {registros_sem_educacao_pais}")
+        print(f"Registros sem dados sobre a educação dos pais: {registros_sem_educacao_pais}")
+        (f'Resumo: {registros_sem_educacao_pais} registros sem dados sobre educação dos pais.')
     else:
-        print("\nColuna 'Parent_Education_Level' não encontrada no dataset.")
+        print("Coluna 'Parent_Education_Level' não encontrada no dataset.")
 
-# Função para limpar os dados
 def limpar_dados(df):
-    # Remover registros com a educação dos pais vazia
+    print("\n--- Iniciando limpeza dos dados ---")
+
+    # Removendo registro vazio
     if 'Parent_Education_Level' in df.columns:
-        df_cleaned = df.dropna(subset=['Parent_Education_Level'])
+        antes = len(df)
+        df = df.dropna(subset=['Parent_Education_Level'])
+        depois = len(df)
+        print(f"Registros removidos por falta de informação sobre a educação dos pais: {antes - depois}")
     else:
-        df_cleaned = df
+        print("Coluna 'Parent_Education_Level' não encontrada no dataset.")
 
-    # Preencher os valores nulos de Attendance com a mediana
-    if 'Attendance (%)' in df_cleaned.columns:
-        attendance_median = df_cleaned['Attendance (%)'].median()
-        df_cleaned['Attendance (%)'].fillna(attendance_median, inplace=True)
-    
-    # Exibir o somatório de Attendance
-    if 'Attendance (%)' in df_cleaned.columns:
-        print(f"\nSomatório de Attendance: {df_cleaned['Attendance (%)'].sum()}")
-    
-    return df_cleaned
+    if 'Attendance (%)' in df.columns:
+        nulos_antes = df['Attendance (%)'].isna().sum()
+        attendance_median = df['Attendance (%)'].median()
+        df['Attendance (%)'] = df['Attendance (%)'].fillna(attendance_median)
+        nulos_depois = df['Attendance (%)'].isna().sum()
+        print(f"Valores nulos em 'Attendance (%)' preenchidos com a mediana: {nulos_antes - nulos_depois}")
+    else:
+        print("Coluna 'Attendance (%)' não encontrada no dataset.")
 
-# Função para consultar dados
+    # Somatório de Attendance
+    if 'Attendance (%)' in df.columns:
+        somatorio = df['Attendance (%)'].sum()
+        print(f"Somatório de 'Attendance (%)': {somatorio}")
+    else:
+        print("Coluna 'Attendance (%)' não encontrada no dataset.")
+
+    print("--- Limpeza concluída ---")
+    return df
+
 def consultar_dados(df):
-    coluna = input("\nDigite o nome da coluna para consulta (ex: Midterm_Score, Final_Score, etc.): ")
-    if coluna in df.columns:
-        print(f"\nConsultando dados da coluna {coluna}:")
-        print(f"Média: {df[coluna].mean()}")
-        print(f"Mediana: {df[coluna].median()}")
-        print(f"Moda: {df[coluna].mode()[0]}")
-        print(f"Desvio padrão: {df[coluna].std()}")
-    else:
-        print(f"\nColuna {coluna} não encontrada no dataset.")
+    print("\n--- Consulta de Estatísticas ---")
 
-# Função para gerar gráficos
+    # Listar colunas disponíveis
+    colunas_numericas = df.select_dtypes(include=[np.number]).columns.tolist()
+
+    if not colunas_numericas:
+        print("Não há colunas disponíveis para análise.")
+        return
+
+    print("Colunas disponíveis:")
+    for i, col in enumerate(colunas_numericas, start=1):
+        print(f"{i}. {col}")
+
+    escolha = input("\nDigite o nome da coluna que deseja consultar: ")
+
+    if escolha in colunas_numericas:
+        print(f"\nEstatísticas da coluna '{escolha}':")
+        print(f"- Média: {df[escolha].mean():.2f}")
+        print(f"- Mediana: {df[escolha].median():.2f}")
+
+        try:
+            moda = df[escolha].mode()
+            if not moda.empty:
+                print(f"- Moda: {moda[0]:.2f}")
+            else:
+                print("- Moda: Não existe moda (valores únicos)")
+        except:
+            print("- Moda: Erro ao calcular a moda")
+
+        print(f"- Desvio Padrão: {df[escolha].std():.2f}")
+    else:
+        print(f"\nColuna '{escolha}' não encontrada ou não é numérica.")
+
 def gerar_graficos(df):
     # Gráfico de dispersão: "horas de sono" vs "nota final"
     if 'Sleep_Hours_per_Night' in df.columns and 'Final_Score' in df.columns:
@@ -106,7 +145,6 @@ def gerar_graficos(df):
     else:
         print("\nColuna 'Age_group' não encontrada no dataset.")
 
-# Função principal
 def main():
     df = carregar_arquivo()
     if df is not None:
