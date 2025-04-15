@@ -1,7 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-import os
 
 # Função que ira carregar os dados
 def carregar_arquivo():
