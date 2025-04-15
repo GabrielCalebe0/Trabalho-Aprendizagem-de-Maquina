@@ -112,45 +112,69 @@ def consultar_dados(df):
         print(f"\nColuna '{escolha}' não encontrada ou não é numérica.")
 
 def gerar_graficos(df):
-    # Gráfico de dispersão: "horas de sono" vs "nota final"
-    if 'Sleep_Hours_per_Night' in df.columns and 'Final_Score' in df.columns:
-        plt.figure(figsize=(10, 6))
-        plt.scatter(df['Sleep_Hours_per_Night'], df['Final_Score'])
-        plt.title('Horas de Sono vs Nota Final')
-        plt.xlabel('Horas de Sono')
-        plt.ylabel('Nota Final')
-        plt.show()
-    else:
-        print("\nColunas 'Sleep_Hours_per_Night' ou 'Final_Score' não encontradas no dataset.")
-    
-    # Gráfico de barras: idade x média das notas intermediárias (Midterm_Score)
-    if 'Age' in df.columns and 'Midterm_Score' in df.columns:
-        df['Age_group'] = pd.cut(df['Age'], bins=[0, 17, 21, 24, np.inf], labels=['Até 17', '18 a 21', '21 a 24', '25 ou mais'])
-        age_group_avg = df.groupby('Age_group')['Midterm_Score'].mean()
+    """Gera gráficos para visualização dos dados."""
+    if df is None or df.empty:
+        print("Nenhum dado disponível para gráficos.")
+        return
 
-        age_group_avg.plot(kind='bar', figsize=(10, 6), title='Idade x Média das Notas de Midterm')
+    # Gráfico de dispersão: sono vs nota
+    if all(col in df.columns for col in ['Sleep_Hours_per_Night', 'Final_Score']):
+        plt.figure(figsize=(10, 6))
+        plt.scatter(df['Sleep_Hours_per_Night'], df['Final_Score'], alpha=0.5)
+        plt.title('Relação entre Horas de Sono e Nota Final')
+        plt.xlabel('Horas de Sono por Noite')
+        plt.ylabel('Nota Final')
+        plt.grid(True)
+        plt.show()
+    else:
+        print("\nDados insuficientes para gerar gráfico de Sono vs Nota.")
+
+    # Gráfico de barras: idade vs nota média
+    if all(col in df.columns for col in ['Age', 'Midterm_Score']):
+        df['Faixa Etária'] = pd.cut(df['Age'], 
+                                   bins=[0, 17, 21, 24, 100],
+                                   labels=['<18', '18-21', '22-24', '25+'])
+        
+        age_score = df.groupby('Faixa Etária')['Midterm_Score'].mean()
+        
+        plt.figure(figsize=(10, 6))
+        age_score.plot(kind='bar', color='skyblue')
+        plt.title('Média de Notas por Faixa Etária')
         plt.xlabel('Faixa Etária')
-        plt.ylabel('Média das Notas de Midterm')
+        plt.ylabel('Média da Nota')
+        plt.xticks(rotation=45)
+        plt.grid(axis='y')
         plt.show()
     else:
-        print("\nColunas 'Age' ou 'Midterm_Score' não encontradas no dataset.")
-    
-    # Gráfico de pizza: distribuição de idades
-    if 'Age_group' in df.columns:
-        age_group_counts = df['Age_group'].value_counts()
-        age_group_counts.plot(kind='pie', autopct='%1.1f%%', figsize=(8, 8), title='Distribuição das Idades')
-        plt.ylabel('')
-        plt.show()
-    else:
-        print("\nColuna 'Age_group' não encontrada no dataset.")
+        print("\nDados insuficientes para gerar gráfico de Idade vs Nota.")
+
 
 def main():
+    print("=== Análise de Dados de Estudantes ===")
+    
     df = carregar_arquivo()
     if df is not None:
         exibir_resumo_estatistico(df)
-        df_cleaned = limpar_dados(df)
-        consultar_dados(df_cleaned)
-        gerar_graficos(df_cleaned)
+        df = limpar_dados(df)
         
+        while True:
+            print("\nMenu Principal:")
+            print("1. Consultar estatísticas")
+            print("2. Gerar gráficos")
+            print("3. Sair")
+            
+            opcao = input("Escolha uma opção, sendo 1, 2 ou 3: ")
+            
+            if opcao == '1':
+                consultar_dados(df)
+            elif opcao == '2':
+                gerar_graficos(df)
+            elif opcao == '3':
+                print("Análise finalizada :)")
+                break
+            else:
+                print("Opção inválida. Tente novamente.")
+
+
 if __name__ == "__main__":
     main()
